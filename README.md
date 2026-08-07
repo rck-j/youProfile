@@ -1,4 +1,4 @@
-# youIntel
+# youProfile
 
 Utilities for the YouTube Intelligence Pipeline live in `youtube_transcript_pipeline/`.
 
