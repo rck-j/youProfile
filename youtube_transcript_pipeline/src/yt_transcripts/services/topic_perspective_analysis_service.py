@@ -20,7 +20,7 @@ class TopicPerspectiveAnalysisService:
         video_id: str,
         channel_id: str | None,
         channel_title: str | None,
-    ) -> list[dict[str, str]]:
+    ) -> dict[str, Any]:
         payload = self.openai_client.analyze_topics_and_perspectives(
             model=model,
             system_prompt=prompt_text,
@@ -29,17 +29,24 @@ class TopicPerspectiveAnalysisService:
             channel_id=channel_id,
             channel_title=channel_title,
         )
-        topics = payload.get("topics", [])
-        if not isinstance(topics, list):
-            return []
+        if not isinstance(payload, dict):
+            return {}
 
-        cleaned_topics: list[dict[str, str]] = []
-        for entry in topics:
-            if not isinstance(entry, dict):
-                continue
-            topic = str(entry.get("topic", "")).strip()
-            perspective = str(entry.get("perspective", "")).strip()
-            if not topic or not perspective:
-                continue
-            cleaned_topics.append({"topic": topic, "perspective": perspective})
-        return cleaned_topics
+        cleaned_payload: dict[str, Any] = {}
+        for key, value in payload.items():
+            if isinstance(value, list):
+                cleaned_entries: list[dict[str, str]] = []
+                for entry in value:
+                    if not isinstance(entry, dict):
+                        continue
+                    normalized_entry: dict[str, str] = {}
+                    for item_key, item_value in entry.items():
+                        item_text = str(item_value).strip()
+                        if item_text:
+                            normalized_entry[str(item_key)] = item_text
+                    if normalized_entry:
+                        cleaned_entries.append(normalized_entry)
+                cleaned_payload[str(key)] = cleaned_entries
+            elif isinstance(value, (str, int, float, bool)):
+                cleaned_payload[str(key)] = value
+        return cleaned_payload

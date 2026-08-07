@@ -34,7 +34,7 @@ class YouTubeDataClient:
     def get_uploads_playlist_id(self, channel_id: str) -> str:
         response = (
             self._service.channels()
-            .list(part="contentDetails", id=channel_id)
+            .list(part="contentDetails,snippet,statistics", id=channel_id)
             .execute()
         )
         items = response.get("items", [])
@@ -60,7 +60,7 @@ class YouTubeDataClient:
             for item in items
             if item.get("snippet", {}).get("resourceId", {}).get("videoId")
         ]
-        durations_by_video_id = self._get_durations_by_video_id(video_ids)
+        video_details_by_id = self._get_video_details_by_video_id(video_ids)
 
         videos: list[VideoItem] = []
         for item in items:
@@ -74,7 +74,10 @@ class YouTubeDataClient:
                     video_id=video_id,
                     title=snippet.get("title", ""),
                     url=f"https://www.youtube.com/watch?v={video_id}",
-                    duration_seconds=durations_by_video_id.get(video_id),
+                    duration_seconds=video_details_by_id.get(video_id, {}).get("duration_seconds"),
+                    view_count=video_details_by_id.get(video_id, {}).get("view_count"),
+                    like_count=video_details_by_id.get(video_id, {}).get("like_count"),
+                    comment_count=video_details_by_id.get(video_id, {}).get("comment_count"),
                     published_at=snippet.get("publishedAt"),
                     channel_id=snippet.get("channelId"),
                     channel_title=snippet.get("channelTitle"),
@@ -83,25 +86,31 @@ class YouTubeDataClient:
             )
         return videos
 
-    def _get_durations_by_video_id(self, video_ids: list[str]) -> dict[str, Optional[int]]:
+    def _get_video_details_by_video_id(self, video_ids: list[str]) -> dict[str, dict[str, Optional[int]]]:
         if not video_ids:
             return {}
         response = (
             self._service.videos()
             .list(
-                part="contentDetails",
+                part="contentDetails,statistics",
                 id=",".join(video_ids),
             )
             .execute()
         )
-        durations: dict[str, Optional[int]] = {}
+        details: dict[str, dict[str, Optional[int]]] = {}
         for item in response.get("items", []):
             video_id = item.get("id")
             if not video_id:
                 continue
             duration = item.get("contentDetails", {}).get("duration", "")
-            durations[video_id] = parse_iso8601_duration_to_seconds(duration)
-        return durations
+            stats = item.get("statistics", {})
+            details[video_id] = {
+                "duration_seconds": parse_iso8601_duration_to_seconds(duration),
+                "view_count": int(stats.get("viewCount")) if stats.get("viewCount") else None,
+                "like_count": int(stats.get("likeCount")) if stats.get("likeCount") else None,
+                "comment_count": int(stats.get("commentCount")) if stats.get("commentCount") else None,
+            }
+        return details
 
     def find_channel_by_name(self, channel_name: str) -> Optional[dict[str, str]]:
         search_response = (
@@ -127,4 +136,21 @@ class YouTubeDataClient:
         return {
             "name": snippet.get("channelTitle") or channel_name,
             "channel_id": channel_id,
+        }
+
+
+    def get_channel_statistics(self, channel_id: str) -> dict[str, Optional[int | str]]:
+        response = self._service.channels().list(part="snippet,statistics", id=channel_id).execute()
+        items = response.get("items", [])
+        if not items:
+            return {}
+        item = items[0]
+        stats = item.get("statistics", {})
+        snippet = item.get("snippet", {})
+        return {
+            "title": snippet.get("title"),
+            "url": f"https://www.youtube.com/channel/{channel_id}",
+            "subscriber_count": int(stats.get("subscriberCount")) if stats.get("subscriberCount") else None,
+            "total_view_count": int(stats.get("viewCount")) if stats.get("viewCount") else None,
+            "video_count": int(stats.get("videoCount")) if stats.get("videoCount") else None,
         }

@@ -14,3 +14,6 @@ class VideoItem:
     channel_id: Optional[str] = None
     channel_title: Optional[str] = None
     description: Optional[str] = None
+    view_count: Optional[int] = None
+    like_count: Optional[int] = None
+    comment_count: Optional[int] = None

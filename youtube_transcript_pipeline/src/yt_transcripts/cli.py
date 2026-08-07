@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 
 from yt_transcripts.config import configure_logging
+from yt_transcripts.db.session import init_db
 from yt_transcripts.services.batch import BatchProcessor
 from yt_transcripts.services.channel_service import ChannelService
 from yt_transcripts.services.latest_videos_transcript_service import LatestVideosTranscriptService
@@ -57,6 +58,10 @@ def build_parser() -> argparse.ArgumentParser:
     analyze.add_argument("--model", default=os.getenv("OPENAI_ANALYSIS_MODEL", "gpt-5"))
     analyze.add_argument("--prompt-file", default="topic_perspective_prompt.txt")
     analyze.add_argument("--output-file", default="outputs/topic_perspectives_aggregate.json")
+    analyze.add_argument("--prompt-version", default="v1")
+    analyze.add_argument("--force", action="store_true")
+
+    subparsers.add_parser("init-db", help="Initialize database schema")
 
     return parser
 
@@ -65,6 +70,11 @@ def main() -> None:
     configure_logging()
     parser = build_parser()
     args = parser.parse_args()
+
+    if args.command == "init-db":
+        init_db()
+        print(json.dumps({"status": "ok", "message": "database initialized"}, indent=2))
+        return
 
     if args.command == "single":
         pipeline = TranscriptPipeline()
@@ -129,12 +139,14 @@ def main() -> None:
             model=args.model,
             prompt_file=args.prompt_file,
             output_file=args.output_file,
+            prompt_version=args.prompt_version,
+            force=args.force,
         )
         print(
             json.dumps(
                 {
                     "analyzed_videos": result["analyzed_videos"],
-                    "topics": len(result["topics"]),
+                    "aggregation_collections": len(result["aggregations"]),
                     "output_file": args.output_file,
                     "model": args.model,
                 },

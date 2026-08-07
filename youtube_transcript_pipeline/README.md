@@ -123,3 +123,44 @@ This command:
 - Analyzes each transcript JSON inside `/outputs`
 - Detects topics and per-topic channel perspectives
 - Aggregates topics across channels and attributes which channels supplied each perspective
+
+## Database setup and usage
+
+Set `DATABASE_URL` in `.env` (Postgres example: `postgresql+psycopg://user:pass@localhost:5432/ytintel`).
+
+Initialize schema:
+
+```bash
+python -m yt_transcripts.cli init-db
+```
+
+Run transcript fetch and persist:
+
+```bash
+python -m yt_transcripts.cli batch-from-config --channels-config config/channels.yaml --max-videos 5 --output-dir outputs
+```
+
+Run analysis and persist:
+
+```bash
+python -m yt_transcripts.cli analyze-topics --input-dir outputs --prompt-file topic_perspective_prompt.txt --prompt-version v1
+```
+
+Example SQL query:
+
+```sql
+SELECT v.youtube_video_id, va.summary, va.main_topics_json
+FROM video_analyses va
+JOIN videos v ON v.id = va.video_id
+WHERE v.youtube_video_id = 'VIDEO_ID_HERE';
+```
+
+### Channel and video metric tracking
+
+The pipeline now stores current channel metrics (`subscriber_count`, `total_view_count`, `video_count`) and current video metrics (`view_count`, `like_count`, `comment_count`) on each run.
+
+It also stores time-series snapshots in:
+- `channel_metric_snapshots`
+- `video_metric_snapshots`
+
+`video_metric_snapshots.hours_since_publish` allows querying engagement near a target time window after release (for example, ~24h or ~168h after publish).
