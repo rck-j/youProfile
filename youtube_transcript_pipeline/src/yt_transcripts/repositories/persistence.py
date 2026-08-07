@@ -5,16 +5,17 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from yt_transcripts.db.models import AnalysisRun, Channel, Transcript, Video, VideoAnalysis
+from yt_transcripts.db.models import AnalysisRun, Channel, Transcript, Video, VideoAnalysis, VideoAnalysisTopic
 
 
-def upsert_channel(session: Session, *, youtube_channel_id: str, title: str, url: str) -> Channel:
+def upsert_channel(session: Session, *, youtube_channel_id: str, title: str, url: str, subscriber_count: int | None = None) -> Channel:
     channel = get_channel_by_youtube_id(session, youtube_channel_id=youtube_channel_id)
     if channel:
         channel.title = title
         channel.url = url
+        channel.subscriber_count = subscriber_count
         return channel
-    channel = Channel(youtube_channel_id=youtube_channel_id, title=title, url=url)
+    channel = Channel(youtube_channel_id=youtube_channel_id, title=title, url=url, subscriber_count=subscriber_count)
     session.add(channel)
     session.flush()
     return channel
@@ -28,7 +29,7 @@ def list_channels(session: Session) -> list[Channel]:
     return list(session.scalars(select(Channel).order_by(Channel.title.asc())).all())
 
 
-def upsert_video(session: Session, *, channel_id: int, youtube_video_id: str, title: str, url: str, published_at: datetime | None, duration_seconds: int | None, is_short: bool) -> Video:
+def upsert_video(session: Session, *, channel_id: int, youtube_video_id: str, title: str, url: str, published_at: datetime | None, duration_seconds: int | None, view_count: int | None = None, like_count: int | None = None, is_short: bool) -> Video:
     video = get_video_by_youtube_id(session, youtube_video_id=youtube_video_id)
     if video:
         video.channel_id = channel_id
@@ -36,9 +37,11 @@ def upsert_video(session: Session, *, channel_id: int, youtube_video_id: str, ti
         video.url = url
         video.published_at = published_at
         video.duration_seconds = duration_seconds
+        video.view_count = view_count
+        video.like_count = like_count
         video.is_short = is_short
         return video
-    video = Video(channel_id=channel_id, youtube_video_id=youtube_video_id, title=title, url=url, published_at=published_at, duration_seconds=duration_seconds, is_short=is_short)
+    video = Video(channel_id=channel_id, youtube_video_id=youtube_video_id, title=title, url=url, published_at=published_at, duration_seconds=duration_seconds, view_count=view_count, like_count=like_count, is_short=is_short)
     session.add(video)
     session.flush()
     return video
@@ -127,3 +130,46 @@ def save_video_analysis(session: Session, *, analysis_run_id: int, video_id: int
 def list_videos_missing_analysis(session: Session) -> list[Video]:
     stmt = select(Video).where(~Video.id.in_(select(VideoAnalysis.video_id)))
     return list(session.scalars(stmt).all())
+
+
+def save_video_analysis_topics(
+    session: Session,
+    *,
+    analysis_run_id: int,
+    video_id: int,
+    main_topics_json: dict | list | None,
+) -> int:
+    session.query(VideoAnalysisTopic).filter(
+        VideoAnalysisTopic.analysis_run_id == analysis_run_id,
+        VideoAnalysisTopic.video_id == video_id,
+    ).delete()
+
+    if not isinstance(main_topics_json, list):
+        return 0
+
+    rows: list[VideoAnalysisTopic] = []
+    for topic_payload in main_topics_json:
+        if not isinstance(topic_payload, dict):
+            continue
+        analysis = topic_payload.get("analysis") if isinstance(topic_payload.get("analysis"), dict) else {}
+        rows.append(
+            VideoAnalysisTopic(
+                analysis_run_id=analysis_run_id,
+                video_id=video_id,
+                topic=topic_payload.get("topic"),
+                event_title=topic_payload.get("event_title"),
+                summary=topic_payload.get("summary"),
+                entities_json=topic_payload.get("entities"),
+                time_context=topic_payload.get("time_context"),
+                perspective=topic_payload.get("perspective"),
+                framing=analysis.get("framing"),
+                narrative=analysis.get("narrative"),
+                rhetoric_json=analysis.get("rhetoric"),
+                influence=analysis.get("influence"),
+            )
+        )
+
+    if rows:
+        session.add_all(rows)
+        session.flush()
+    return len(rows)

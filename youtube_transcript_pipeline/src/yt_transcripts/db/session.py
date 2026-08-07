@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from importlib.util import find_spec
 from collections.abc import Iterator
 
 from dotenv import load_dotenv
@@ -15,10 +16,19 @@ load_dotenv()
 
 def _normalized_database_url() -> str:
     url = os.getenv("DATABASE_URL", "sqlite:///yt_transcripts.db")
+
+    if url.startswith("postgresql+psycopg://") or url.startswith("postgresql+psycopg2://"):
+        return url
+
     if url.startswith("postgres://"):
-        return url.replace("postgres://", "postgresql+psycopg://", 1)
-    if url.startswith("postgresql://") and "+psycopg" not in url:
-        return url.replace("postgresql://", "postgresql+psycopg://", 1)
+        url = url.replace("postgres://", "postgresql://", 1)
+
+    if url.startswith("postgresql://"):
+        if find_spec("psycopg") is not None:
+            return url.replace("postgresql://", "postgresql+psycopg://", 1)
+        if find_spec("psycopg2") is not None:
+            return url.replace("postgresql://", "postgresql+psycopg2://", 1)
+
     return url
 
 

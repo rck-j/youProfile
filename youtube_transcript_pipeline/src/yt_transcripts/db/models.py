@@ -17,6 +17,7 @@ class Channel(Base):
     youtube_channel_id: Mapped[str] = mapped_column(String(128), unique=True, nullable=False)
     title: Mapped[str] = mapped_column(String(512), nullable=False)
     url: Mapped[str] = mapped_column(String(512), nullable=False)
+    subscriber_count: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 
@@ -31,6 +32,8 @@ class Video(Base):
     url: Mapped[str] = mapped_column(String(512), nullable=False)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     duration_seconds: Mapped[int | None] = mapped_column(Integer)
+    view_count: Mapped[int | None] = mapped_column(Integer)
+    like_count: Mapped[int | None] = mapped_column(Integer)
     is_short: Mapped[bool] = mapped_column(default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
@@ -95,3 +98,28 @@ class VideoAnalysis(Base):
     influence_signals_json: Mapped[dict | list | None] = mapped_column(JSON)
     confidence_score: Mapped[float | None] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+
+class VideoAnalysisTopic(Base):
+    __tablename__ = "video_analysis"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    analysis_run_id: Mapped[int] = mapped_column(ForeignKey("analysis_runs.id", ondelete="CASCADE"), nullable=False)
+    video_id: Mapped[int] = mapped_column(ForeignKey("videos.id", ondelete="CASCADE"), nullable=False)
+    topic: Mapped[str | None] = mapped_column(String(512))
+    event_title: Mapped[str | None] = mapped_column(String(512))
+    summary: Mapped[str | None] = mapped_column(Text)
+    entities_json: Mapped[dict | list | None] = mapped_column(JSON)
+    time_context: Mapped[str | None] = mapped_column(String(256))
+    perspective: Mapped[str | None] = mapped_column(Text)
+    framing: Mapped[str | None] = mapped_column(Text)
+    narrative: Mapped[str | None] = mapped_column(Text)
+    rhetoric_json: Mapped[dict | list | None] = mapped_column(JSON)
+    influence: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+
+    __table_args__ = (
+        Index("ix_video_analysis_analysis_run_id", "analysis_run_id"),
+        Index("ix_video_analysis_video_id", "video_id"),
+        Index("ix_video_analysis_topic", "topic"),
+    )

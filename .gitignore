@@ -2,3 +2,5 @@
 mvp*
 transcript_pipeline.py
 /youtube_transcript_pipeline/outputs/*
+youtube_transcript_pipeline/tscripts/*
+*.pyc

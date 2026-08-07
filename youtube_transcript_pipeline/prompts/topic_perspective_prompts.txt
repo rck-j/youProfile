@@ -1,0 +1,312 @@
+You are analyzing one YouTube transcript from a specific creator/channel.
+
+Your task is NOT simply to summarize what was discussed.
+
+Your task is to identify:
+- the broader narrative domains
+- the recurring thematic umbrellas
+- the creator’s framing and interpretation
+- the rhetoric and influence mechanisms being applied
+
+The goal is to produce structured outputs that can later be compared across:
+- multiple videos
+- multiple creators
+- political alignments
+- ideological communities
+- time periods
+
+The output should optimize for:
+- cross-video topic overlap
+- narrative clustering
+- reusable topic normalization
+- longitudinal analysis
+- creator-to-creator comparison
+
+--------------------------------------------------
+PRIMARY OBJECTIVE
+--------------------------------------------------
+
+Identify:
+1. The PRIMARY SUBJECT DOMAIN of the video
+2. 3–6 BROAD UMBRELLA TOPICS
+3. The creator’s:
+   - interpretation
+   - framing
+   - rhetoric
+   - implied influence on the audience
+
+The focus should be on:
+- recurring narratives
+- worldview construction
+- emotional framing
+- audience persuasion
+- narrative reinforcement
+
+NOT on granular facts or isolated events.
+
+--------------------------------------------------
+TOPIC NORMALIZATION RULES
+--------------------------------------------------
+
+The goal is NOT to identify every distinct issue discussed.
+
+The goal is to identify broader reusable thematic umbrellas that can group related discussions across many videos and creators.
+
+Topics should:
+- generalize across videos
+- maximize overlap between creators
+- absorb related subtopics
+- remain reusable over time
+- avoid transcript-specific fragmentation
+
+Prefer umbrella narratives over narrow event labels.
+
+GOOD:
+- "Geopolitics & Foreign Policy"
+- "Global Economy & Markets"
+- "U.S. Politics & Governance"
+- "Media & Narrative Framing"
+- "Energy & Resource Security"
+
+BAD:
+- "Strait of Hormuz"
+- "Trump Gas Tax Pause"
+- "German LNG Imports"
+- "Poll Watcher Lawsuit"
+
+Specific examples, claims, and events should be folded INTO:
+- summaries
+- perspectives
+- rhetoric analysis
+
+Do NOT create separate topics unless the issue represents a truly independent narrative domain.
+
+--------------------------------------------------
+CANONICAL UMBRELLA TOPICS
+--------------------------------------------------
+
+Strongly prefer reusing these umbrella topics when appropriate:
+
+- Geopolitics & Foreign Policy
+- Global Economy & Markets
+- Energy & Resource Security
+- U.S. Politics & Governance
+- Elections & Democratic Institutions
+- Media & Narrative Framing
+- Technology & AI
+- National Security & Defense
+- Trade & Industrial Policy
+- Social & Cultural Conflict
+- Immigration & Demographics
+- Financial Markets & Investing
+- Institutional Trust & Corruption
+- Public Health & Society
+- Corporate Power & Economic Elites
+- Law, Courts & Constitutional Issues
+- Race, Identity & Ideology
+- Religion & National Identity
+- Climate & Environmental Policy
+
+You MAY create a new umbrella topic if necessary, but strongly prefer existing normalized categories.
+
+--------------------------------------------------
+TOPIC RULES
+--------------------------------------------------
+
+Each topic:
+- must be 2–6 words
+- must represent a broad narrative domain
+- must be reusable across many videos
+- should NOT contain narrow current-event phrasing
+
+Each video should contain:
+- 3–6 umbrella topics maximum
+
+Avoid duplicate or overlapping topics.
+
+If two topics could reasonably belong together:
+MERGE THEM.
+
+--------------------------------------------------
+SUMMARY RULES
+--------------------------------------------------
+
+Each summary must:
+
+1. Begin with:
+   "In [TOPIC]..."
+
+2. Explain:
+   - what is happening
+   - what the creator emphasizes
+   - why it matters within the narrative
+
+3. Be understandable WITHOUT transcript context
+
+4. Be concise:
+   - 2–4 sentences maximum
+
+The summary should describe:
+- the narrative being advanced
+- not merely the factual event
+
+--------------------------------------------------
+PERSPECTIVE RULES
+--------------------------------------------------
+
+Describe the creator/channel’s interpretation.
+
+Include:
+- tone
+- worldview
+- assumptions
+- blame attribution
+- implied causes
+- implied outcomes
+
+Focus on:
+- whether the creator frames institutions as trustworthy or corrupt
+- whether systems are portrayed as stable or collapsing
+- whether elites are portrayed as competent or malicious
+- whether the audience is encouraged toward fear, optimism, distrust, urgency, anger, nationalism, etc.
+
+Perspective should:
+- be analytical
+- not moralizing
+- not emotionally reactive
+- grounded in transcript evidence
+
+Length:
+- 2–5 sentences
+
+--------------------------------------------------
+RHETORIC / BIAS / INFLUENCE ANALYSIS
+--------------------------------------------------
+
+For EACH topic analyze:
+
+--------------------------------------------------
+FRAMING
+--------------------------------------------------
+
+How is the issue positioned?
+
+Examples:
+- crisis
+- corruption
+- systemic decline
+- elite manipulation
+- opportunity
+- instability
+- censorship
+- institutional failure
+- moral emergency
+- national threat
+- economic collapse
+- democratic erosion
+
+--------------------------------------------------
+NARRATIVE
+--------------------------------------------------
+
+What core story is being promoted?
+
+Describe:
+- the implied worldview
+- the cause-and-effect chain
+- who is responsible
+- who benefits
+- who suffers
+
+1–3 sentences.
+
+--------------------------------------------------
+RHETORIC
+--------------------------------------------------
+
+Identify the persuasion techniques used.
+
+Possible examples:
+- emotional language
+- fear appeals
+- certainty framing
+- selective statistics
+- anecdotal evidence
+- ridicule
+- sarcasm
+- enemy construction
+- populist framing
+- urgency
+- doom framing
+- optimism framing
+- moral framing
+- repetition
+- authority signaling
+- conspiracy implication
+- distrust amplification
+- tribal identity reinforcement
+- victim framing
+- outrage amplification
+
+Return as an array.
+
+--------------------------------------------------
+INFLUENCE
+--------------------------------------------------
+
+What is the audience implicitly encouraged to believe, feel, or do?
+
+Examples:
+- distrust institutions
+- prepare for collapse
+- support intervention
+- oppose elites
+- buy assets
+- reject mainstream media
+- fear geopolitical escalation
+- view politics tribally
+- become politically active
+- expect inflation
+- seek financial independence
+
+Be analytical and evidence-based.
+
+Do NOT speculate beyond what is reasonably implied.
+
+
+--------------------------------------------------
+OUTPUT REQUIREMENTS
+--------------------------------------------------
+
+Return ONLY valid JSON.
+
+Be concise and faithful to transcript evidence
+
+Do NOT include markdown.
+
+Do NOT include explanations.
+
+Do NOT include commentary outside JSON.
+
+
+--------------------------------------------------
+JSON SCHEMA
+--------------------------------------------------
+
+JSON schema:
+{
+  "domain": "string",
+  "topics": [
+    {
+      "topic": "string",
+      "summary": "string",
+      "perspective": "string",
+      "analysis": {
+        "framing": "string",
+        "narrative": "string",
+        "rhetoric": ["string"],
+        "influence": "string"
+      }
+    }
+  ]
+}

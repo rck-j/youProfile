@@ -134,6 +134,13 @@ Initialize schema:
 python -m yt_transcripts.cli init-db
 ```
 
+
+For existing databases created before these fields were added, run:
+
+```bash
+PYTHONPATH=src python scripts/migrate_add_channel_video_metrics.py
+```
+
 Run transcript fetch and persist:
 
 ```bash
@@ -157,10 +164,17 @@ WHERE v.youtube_video_id = 'VIDEO_ID_HERE';
 
 ### Channel and video metric tracking
 
-The pipeline now stores current channel metrics (`subscriber_count`, `total_view_count`, `video_count`) and current video metrics (`view_count`, `like_count`, `comment_count`) on each run.
+The pipeline stores channel subscriber counts (`channels.subscriber_count`) and per-video engagement metrics (`videos.view_count`, `videos.like_count`) on each run.
 
-It also stores time-series snapshots in:
-- `channel_metric_snapshots`
-- `video_metric_snapshots`
+## Analyze database query results with OpenAI
 
-`video_metric_snapshots.hours_since_publish` allows querying engagement near a target time window after release (for example, ~24h or ~168h after publish).
+Edit the `QUERY` constant in `scripts/analyze_query_results_with_openai.py` to define the read-only `SELECT`/`WITH` query to run against `DATABASE_URL`. Customize the prompt in `prompts/query_results_analysis_prompt.txt`, then run:
+
+```bash
+PYTHONPATH=src python scripts/analyze_query_results_with_openai.py \
+  --model gpt-5 \
+  --prompt-file prompts/query_results_analysis_prompt.txt \
+  --output outputs/query_results_analysis.json
+```
+
+The utility writes a JSON artifact containing the model name, prompt file, executed query, returned row count, and OpenAI analysis text. The script rejects mutation queries so it can be used safely as a read-only reporting helper.

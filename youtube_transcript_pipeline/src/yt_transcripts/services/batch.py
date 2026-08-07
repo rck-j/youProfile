@@ -47,6 +47,7 @@ class BatchProcessor:
 
         with SessionLocal() as session:
             for channel_id in channel_ids:
+                channel_stats = self.youtube_client.get_channel_statistics(channel_id)
                 videos = self.youtube_client.get_latest_videos(
                     channel_id=channel_id,
                     max_results=max_videos_per_channel,
@@ -64,7 +65,7 @@ class BatchProcessor:
                             whisper_model=whisper_model,
                             whisper_language=whisper_language,
                         )
-                    self._persist_video_and_transcript(session=session, video=video, transcript=transcript)
+                    self._persist_video_and_transcript(session=session, video=video, transcript=transcript, subscriber_count=channel_stats.get("subscriber_count"))
                     record = self._build_record(video, transcript.to_dict())
                     batch_results.append(record)
                     self._write_record(output_path=output_path, video=video, record=record)
@@ -80,12 +81,13 @@ class BatchProcessor:
             return None
         return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
-    def _persist_video_and_transcript(self, *, session, video: VideoItem, transcript: TranscriptResult) -> None:
+    def _persist_video_and_transcript(self, *, session, video: VideoItem, transcript: TranscriptResult, subscriber_count: int | None = None) -> None:
         channel = upsert_channel(
             session,
             youtube_channel_id=video.channel_id or "unknown",
             title=video.channel_title or "Unknown",
             url=f"https://www.youtube.com/channel/{video.channel_id}" if video.channel_id else "",
+            subscriber_count=subscriber_count,
         )
         db_video = upsert_video(
             session,
@@ -95,6 +97,8 @@ class BatchProcessor:
             url=video.url,
             published_at=self._parse_published_at(video.published_at),
             duration_seconds=video.duration_seconds,
+            view_count=video.view_count,
+            like_count=video.like_count,
             is_short=bool(video.duration_seconds and video.duration_seconds <= 60),
         )
         upsert_transcript(
