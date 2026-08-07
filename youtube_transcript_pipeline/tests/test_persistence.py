@@ -172,13 +172,19 @@ def test_save_video_analysis_topics_inserts_multiple_rows() -> None:
         main_topics_json=[
             {
                 "topic": "Defense Leadership",
+                "event_title": "Event 1",
                 "summary": "s1",
+                "entities": ["entity1", "entity2"],
+                "time_context": "current",
                 "perspective": "p1",
                 "analysis": {"framing": "f1", "narrative": "n1", "rhetoric": ["r1"], "influence": "i1"},
             },
             {
                 "topic": "Civil-Military Relations",
+                "event_title": "Event 2",
                 "summary": "s2",
+                "entities": ["entity3"],
+                "time_context": "historical",
                 "perspective": "p2",
                 "analysis": {"framing": "f2", "narrative": "n2", "rhetoric": ["r2"], "influence": "i2"},
             },
@@ -188,6 +194,8 @@ def test_save_video_analysis_topics_inserts_multiple_rows() -> None:
     rows = session.scalars(select(VideoAnalysisTopic).where(VideoAnalysisTopic.analysis_run_id == 33, VideoAnalysisTopic.video_id == 77)).all()
     assert len(rows) == 2
     assert {row.topic for row in rows} == {"Defense Leadership", "Civil-Military Relations"}
+    assert {row.event_title for row in rows} == {"Event 1", "Event 2"}
+    assert {row.time_context for row in rows} == {"current", "historical"}
 
 
 def test_save_video_analysis_topics_handles_empty_or_missing_list() -> None:

@@ -28,6 +28,7 @@ def test_video_analysis_table_compiles_to_postgres_ddl() -> None:
 
     assert "DATETIME" not in table_sql
     assert "TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL" in table_sql
+    assert "entities_json JSON" in table_sql
     assert "rhetoric_json JSON" in table_sql
     assert "FOREIGN KEY(analysis_run_id) REFERENCES analysis_runs" in table_sql
     assert "FOREIGN KEY(video_id) REFERENCES videos" in table_sql
@@ -43,10 +44,14 @@ def test_video_analysis_insert_compiles_json_bind_for_postgres() -> None:
         analysis_run_id=1,
         video_id=2,
         topic="energy",
+        event_title="Energy Transition",
+        entities_json=["DOE"],
+        time_context="2026",
         rhetoric_json={"appeal": "authority"},
     )
     insert_sql = str(statement.compile(dialect=dialect))
 
+    assert "entities_json" in insert_sql
     assert "rhetoric_json" in insert_sql
     assert "::JSON" in insert_sql
 
@@ -60,7 +65,10 @@ def test_migration_backfills_legacy_topics_from_sqlite_database(tmp_path, monkey
     topics = [
         {
             "topic": "energy",
+            "event_title": "Energy Transition",
             "summary": "Topic summary",
+            "entities": ["DOE", "EPA"],
+            "time_context": "2026 policy cycle",
             "perspective": "Supportive",
             "analysis": {
                 "framing": "economic",
@@ -129,7 +137,7 @@ def test_migration_backfills_legacy_topics_from_sqlite_database(tmp_path, monkey
         row = connection.execute(
             text(
                 """
-                SELECT topic, summary, perspective, framing, narrative, rhetoric_json, influence
+                SELECT topic, event_title, summary, entities_json, time_context, perspective, framing, narrative, rhetoric_json, influence
                 FROM video_analysis
                 WHERE analysis_run_id = 4 AND video_id = 2
                 """
@@ -137,7 +145,10 @@ def test_migration_backfills_legacy_topics_from_sqlite_database(tmp_path, monkey
         ).mappings().one()
 
     assert row["topic"] == "energy"
+    assert row["event_title"] == "Energy Transition"
     assert row["summary"] == "Topic summary"
+    assert json.loads(row["entities_json"]) == ["DOE", "EPA"]
+    assert row["time_context"] == "2026 policy cycle"
     assert row["perspective"] == "Supportive"
     assert row["framing"] == "economic"
     assert row["narrative"] == "growth"
